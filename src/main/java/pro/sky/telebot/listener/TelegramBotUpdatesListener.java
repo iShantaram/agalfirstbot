@@ -46,8 +46,7 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
             Long chatId = update.message().chat().id();
 
             if (update.message().text().equals("/start")) {
-                SendMessage message = new SendMessage(chatId, String.format("Привет, %s! \nВведи задачу в формате 01.02.2024" +
-                                                       " 20:00 Оповещение!", update.message().from().firstName()));
+                SendMessage message = new SendMessage(chatId, String.format("Привет, %s! Введи задачу в формате 19.02.2024 22:30 Сделать домашнюю работу", update.message().from().firstName()));
                 telegramBot.execute(message);
             }
 
