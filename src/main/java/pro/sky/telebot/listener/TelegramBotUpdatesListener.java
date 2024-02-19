@@ -42,31 +42,34 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     @Override
     public int process(List<Update> updates) {
         updates.forEach(update -> {
-            logger.info("Processing update: {}", update);
-            Long chatId = update.message().chat().id();
-
-            if (update.message().text().equals("/start")) {
-                SendMessage message = new SendMessage(chatId, String.format("Привет, %s! Введи задачу в формате 19.02.2024 22:30 Сделать домашнюю работу", update.message().from().firstName()));
-                telegramBot.execute(message);
+            try {
+                logger.info("Processing update: {}", update);
+                Long chatId = update.message().chat().id();
+            
+                if (update.message().text().equals("/start")) {
+                    SendMessage message = new SendMessage(chatId, String.format("Привет, %s! Введи задачу в формате 19.02.2024 22:30 Сделать домашнюю работу", update.message().from().firstName()));
+                    telegramBot.execute(message);
+                }
+            
+                Pattern pattern = Pattern.compile("([0-9\\.\\:\\s]{16})(\\s)([\\W+]+)");
+                Matcher matcher = pattern.matcher(update.message().text());
+                String date = null;
+                String item = null;
+                if (matcher.matches()) {
+                    date = matcher.group(1);
+                    item = matcher.group(3);
+                    logger.info("Date: {}, item: {}", date, item);
+                }
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+                if (date != null) {
+                    LocalDateTime dateTime = LocalDateTime.parse(date, formatter);
+                    notificationTaskRepository.save(new NotificationTask(chatId, item, dateTime));
+                    SendMessage message = new SendMessage(chatId, "Событие сохранено!");
+                    telegramBot.execute(message);
+                }
+            } catch (RuntimeException e) {
+                e.printStackTrace();
             }
-
-            Pattern pattern = Pattern.compile("([0-9\\.\\:\\s]{16})(\\s)([\\W+]+)");
-            Matcher matcher = pattern.matcher(update.message().text());
-            String date = null;
-            String item = null;
-            if (matcher.matches()) {
-                date = matcher.group(1);
-                item = matcher.group(3);
-                logger.info("Date: {}, item: {}", date, item);
-            }
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
-            if (date != null) {
-                LocalDateTime dateTime = LocalDateTime.parse(date, formatter);
-                notificationTaskRepository.save(new NotificationTask(chatId, item, dateTime));
-                SendMessage message = new SendMessage(chatId, "Событие сохранено!");
-                telegramBot.execute(message);
-            }
-
         });
         return UpdatesListener.CONFIRMED_UPDATES_ALL;
     }
